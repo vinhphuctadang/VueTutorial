@@ -8,8 +8,8 @@
     <body>
         <div id="app">
             <div id="searchPane">
-                <input name="search" type="text" :placeholder="[[ searchOptionsToString() ]]" @blur="onSearchInputFocus(false)" @focus="onSearchInputFocus(true)">
-                <input type="submit" value="search">
+                <input name="search" style="width:80%;" type="text" @blur="inputBlur" @focus="inputFocus" v-model="searchString">
+                <input type="submit" value="search" v-if="!searchAdvance">
                 <div class="menu-content" v-if="searchInputFocus">
                     <p @click="selectEntity('site')">Site</p>
                     <p @click="selectEntity('page')">Page</p>
@@ -31,33 +31,68 @@
                     <table>
                         <tr>
                             <td>Type:</td>
-                            <td><select><option>Option 1</option></select></td>
+                            <td>
+                                <select v-model="searchOptions.type" @change="typeChange">
+                                    <option value="page">Page</option>
+                                    <option value="site">Site</option>
+                                </select>
+                            </td>
                         </tr>
                         <tr>
                             <td>Owner:</td>
                             <td>
-                                <select><option>Option 1</option></select><br>
-                                <input type="checkbox" value="starred"> is star
-                                <input type="checkbox" value="trashed"> is trash
+                                <select v-model="searchOptions.owner" @change="ownerChange">
+                                    <option value="byMe">Me</option>
+                                    <option value="notMe">Not me</option>
+                                    <option value="specificPerson">Specific person</option>
+                                </select>
+                                <br>
+                                <div  v-if="searchOptions.owner=='specificPerson'">
+                                    Owner name: <input type="text" v-model="searchOptions.ownerSpecified" list="specificPersonList" @change="ownerChange">
+                                    <datalist id="specificPersonList">
+                                        <option value="tom">Tom</option>
+                                        <option value="john">John</option>
+                                    </datalist>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Owner:</td>
+                            <td>
+                                <input type="checkbox" value="starred" v-model="searchOptions.is" @change="propertyChange" :checked="[[ searchOptions.is.includes('starred') ]]"> is star
+                                <input type="checkbox" value="trashed" v-model="searchOptions.is" @change="propertyChange" :checked="[[ searchOptions.is.includes('trashed') ]]"> is trash
                             </td>
                         </tr>
                         <tr>
                             <td>Date modified:</td>
-                            <td><input type="datetime-local"></td>
+                            <td>
+                                <select v-model="searchOptions.date" @change="dateChange">
+                                    <option value="anytime">Anytime</option>
+                                    <option value="yesterday">Yesterday</option>
+                                    <option value="last30days">Last 30 days</option>
+                                    <option value="range">Find in range</option>
+                                </select>
+                                <br>
+                                <div v-if="searchOptions.date==='range'">
+                                    From: <br><input type="datetime-local" v-model="searchOptions.dateFrom" @change="dateChange"><br>
+                                    To: <br><input type="datetime-local" v-model="searchOptions.dateTo" @change="dateChange">
+                                </div>
+                            </td>
+                            
                         </tr>
                         <tr>
                             <td>Item name/Title:</td>
-                            <td><input type="text"></td>
+                            <td><input type="text" v-model="searchOptions.title" @change="titleChange"></td>
                         </tr>
                         <tr>
                             <td>Has the world:</td>
-                            <td><input type="text"></td>
+                            <td><input type="text" v-model="searchOptions.hasWord" @change="hasWordChange"></td>
                         </tr>
                         <tr>
                             <td></td>
                             <td>
-                                <button>cancel</button>
-                                <button>search</button>
+                                <button @click="reset">RESET</button>
+                                <button @click="search">SEARCH</button>
                             </td>
                         </tr>
                     </table>
@@ -68,7 +103,7 @@
                 <ul>
                     <li v-for="result in searchResults">
                         {{ result.id }}
-                    </li> 
+                    </li>
                 </ul>
             </div>
         </div>
@@ -93,24 +128,32 @@
                 searchPage: false,
                 searchSite: false,
                 searchAdvance: false,
+                // we will parse searchString into search options and back
+                searchString: '',
                 searchOptions: {
-                    type: 'site'
-                }
+                    type: null,
+                    is: [],
+                    owner: null,
+                    ownerSpecified: null,
+                    date: null,
+                    dateFrom: null,
+                    dateTo: null,
+                    title: null,
+                    hasWord: null
+                },
             },
 
             methods : {
-                onSearchInputFocus: function(state){
-                    if (state) {
-                        this.searchPage = 
-                        this.searchSite =
-                        this.searchAdvance = false
-                        this.searchInputFocus = state;
-                    }
-                    else {
-                        setTimeout(()=>{
-                            this.searchInputFocus = state;
-                        }, 100)
-                    }
+                inputFocus: function(){
+                    if (this.searchAdvance || this.searchPage || this.searchSite) 
+                        return 
+                    this.searchInputFocus = true
+                },
+                inputBlur: function(){
+                    setTimeout(()=>{
+                        this.searchInputFocus = false
+                    }, 100)
+                    this.updateSearchOptions()
                 },
                 selectEntity: function(entity){
                     this.searchOptions.type = entity
@@ -125,22 +168,105 @@
                     else if (entity === 'advance'){
                         this.searchInputFocus = false
                         this.searchAdvance = true
+                        this.searchOptions.type = null
                     }
                 },
                 searchOptionsToString: function(){
-                    let result = ""
+                    let result = []
                     for(let key in this.searchOptions) {
-                        result += `${key}:${this.searchOptions[key]} `
+                        if (this.searchOptions[key] == null || this.searchOptions[key].length == 0) continue
+                        if (Array.isArray(this.searchOptions[key])) {
+                            for(let val of this.searchOptions[key]) {
+                                result.push(`"${key}:${val}"`)
+                            }
+                        }
+                        else {
+                            result.push(`"${key}:${this.searchOptions[key]}"`)
+                        }
                     }
-                    return result
+                    return result.join(' ')
+                },
+                titleChange: function(){
+                    this.searchString = this.searchOptionsToString()
+                },
+                hasWordChange: function(){
+                    this.searchString = this.searchOptionsToString()
+                },
+                typeChange: function(){
+                    this.searchString = this.searchOptionsToString()
+                },
+                propertyChange: function(){
+                    this.searchString = this.searchOptionsToString()
+                },
+                ownerChange: function(){
+                    this.searchString = this.searchOptionsToString()
+                    if (this.searchOptions.owner == 'me' || this.searchOptions.owner == 'notMe') {
+                        this.searchOptions.ownerSpecified = null
+                    }
+                },
+                dateChange: function(){
+                    this.searchString = this.searchOptionsToString()
+                    if (this.date != 'range') {
+                        this.searchOptions.dateFrom = this.searchOptions.dateTo = null
+                    }
+                },
+                updateSearchOptions: function(){
+                    let reg = /[^"]+(?=("\ +")|"$)/g    
+                    let tmpOptions = {}
+                    for(let key in this.searchOptions) {
+                        if (Array.isArray(this.searchOptions[key])) {
+                            tmpOptions[key] = []
+                            continue
+                        }
+                        tmpOptions[key] = null
+                    }
+
+                    let match = reg.exec(this.searchString)
+                    while(match) {
+                        let keyValue = match[0]
+                        let splitIndex = keyValue.indexOf(':')
+                        let key = keyValue.substr(0, splitIndex)
+                        let value = keyValue.substr(splitIndex+1)
+                        if (key in this.searchOptions) {
+                            // if key in allowed options d
+                            if (Array.isArray(this.searchOptions[key])) {
+                                tmpOptions[key].push(value)
+                            }
+                            else {
+                                tmpOptions[key] = value
+                            }
+                        }
+                        // next match
+                        match = reg.exec(this.searchString)
+                    }
+
+                    this.searchOptions = tmpOptions
+                },
+                reset: function(){
+                    this.searchOptions =  {
+                        type: null,
+                        is: [],
+                        owner: null,
+                        ownerSpecified: null,
+                        date: null,
+                        dateFrom: null,
+                        dateTo: null,
+                        title: null,
+                        hasWord: null
+                    }
+                    this.updateSearchOptions()
+                },
+                search: function(){
+
+                },
+                
+            },
+            watch: {
+                // whenever question changes, this function will run
+                'searchOptions.title': function (NEW, OLD) {
+                    this.updateSearchOptions()
                 }
-                // addElement: function(){
-                //     this.searchResults.push({
-                //         id: this.searchResults.length + 1,
-                //         name: `Name of ${this.searchResults.length + 1}`,
-                //     })
-                // }
-            }
+            },
         })
 
     </script>
