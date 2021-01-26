@@ -6,6 +6,12 @@
     <body>
         <div id="app">
             <p>{{ message }}</p>
+            <ul>
+                <li v-for="result in searchResults">
+                    {{ result.id }}. {{ result.name }}
+                </li>
+            </ul>
+            <button v-on:click="addElement">Add elements</button>
         </div>
     </body>
 
@@ -13,8 +19,27 @@
         var app = new Vue({
             el: '#app',
             data: {
-                message: 'Hello Vue!'
+                message: 'Hello Vue! Following is list',
+                searchResults: [
+                    {
+                        id: '1',
+                        name: 'Cross Origin'
+                    },
+                    {
+                        id: '2',
+                        name: 'Requests'
+                    }
+                ]
+            },
+            methods : {
+                addElement: function(){
+                    this.searchResults.push({
+                        id: this.searchResults.length + 1,
+                        name: `Name of ${this.searchResults.length + 1}`,
+                    })
+                }
             }
         })
+
     </script>
 </html>
