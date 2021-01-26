@@ -15,6 +15,53 @@
                     <p @click="selectEntity('page')">Page</p>
                     <p @click="selectEntity('advance')">Advance...</p>
                 </div>
+                <div class="menu-content" v-if="searchSite">
+                    <p>Options for search site</p>
+                    <!-- <p @click="selectEntity('site')">Site</p>
+                    <p @click="selectEntity('page')">Page</p>
+                    <p @click="selectEntity('advance')">Advance...</p> -->
+                </div>
+                <div class="menu-content" v-if="searchPage">
+                    <p>Options for search page</p>
+                    <!-- <p @click="selectEntity('site')">Site</p>
+                    <p @click="selectEntity('page')">Page</p>
+                    <p @click="selectEntity('advance')">Advance...</p> -->
+                </div>
+                <div class="menu-content" v-if="searchAdvance">
+                    <table>
+                        <tr>
+                            <td>Type:</td>
+                            <td><select><option>Option 1</option></select></td>
+                        </tr>
+                        <tr>
+                            <td>Owner:</td>
+                            <td>
+                                <select><option>Option 1</option></select><br>
+                                <input type="checkbox" value="starred"> is star
+                                <input type="checkbox" value="trashed"> is trash
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Date modified:</td>
+                            <td><input type="datetime-local"></td>
+                        </tr>
+                        <tr>
+                            <td>Item name/Title:</td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td>Has the world:</td>
+                            <td><input type="text"></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <button>cancel</button>
+                                <button>search</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
             <div id="resultPane">
                 <p v-if="searchResults.length>0">Search result:</p>
@@ -43,26 +90,42 @@
                     }
                 ],
                 searchInputFocus: false,
+                searchPage: false,
+                searchSite: false,
+                searchAdvance: false,
                 searchOptions: {
                     type: 'site'
                 }
             },
 
             methods : {
-                
                 onSearchInputFocus: function(state){
                     if (state) {
+                        this.searchPage = 
+                        this.searchSite =
+                        this.searchAdvance = false
                         this.searchInputFocus = state;
                     }
                     else {
                         setTimeout(()=>{
                             this.searchInputFocus = state;
-                        }, 200)
+                        }, 100)
                     }
                 },
                 selectEntity: function(entity){
-                    
                     this.searchOptions.type = entity
+                    if (entity === 'site') {
+                        this.searchInputFocus = false
+                        this.searchSite = true
+                    }
+                    else if (entity === 'page'){
+                        this.searchInputFocus = false
+                        this.searchPage = true
+                    }
+                    else if (entity === 'advance'){
+                        this.searchInputFocus = false
+                        this.searchAdvance = true
+                    }
                 },
                 searchOptionsToString: function(){
                     let result = ""
