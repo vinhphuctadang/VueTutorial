@@ -1,0 +1,28 @@
+.menu-content {
+    display: block;
+    position: absolute;
+    left: 0;
+    background-color: white;
+    width: 40%;
+    margin-left: 20px;
+    z-index: 1;
+    border: 1px solid black;
+}
+
+.menu-content p {
+    width: 100%;
+    display: block;
+    float: left;
+    color: black;
+    text-decoration: none;
+    text-align: left;
+    height: 30px;
+}
+
+.menu-content p:hover {
+    display: block;
+    background-color: orange;
+    color: black;
+}
+
+  
