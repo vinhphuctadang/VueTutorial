@@ -6,9 +6,11 @@
         <link href="css/search.css" rel="stylesheet">
     </head>
     <body>
-        <div id="app">
+        <div id="app" @click="clickOutSideMenu">
             <div id="searchPane">
-                <input name="search" style="width:80%;" type="text" 
+                <input 
+                    name="search" style="width:80%;" type="text"
+                    autocomplete="off" 
                     @blur="inputBlur" v-model="searchString"
                     @keyup.enter="enterOnInput()"
                     @click="inputFocus"
@@ -20,13 +22,13 @@
                     <p @click="selectEntity('advance')">Advance...</p>
                 </div>
                 <div class="menu-content" v-if="searchSite">
-                    <p v-for="result in searchResults" @mouseover="menuMouseOver">
+                    <p v-for="result in searchResults" @mouseover="menuHovered=true" @mouseleave="menuHovered=false" @click="clickOnResult">
                         [{{ result.type }}] {{ result.title }} {{ result.date }}
                     </p>
                     <p v-if="searchResults.length == 0">Not found</p>
                 </div>
                 <div class="menu-content" v-if="searchPage" tabindex="0">
-                    <p v-for="result in searchResults" @mouseover="menuMouseOver">
+                    <p v-for="result in searchResults" @mouseover="menuHovered=true" @mouseleave="menuHovered=false" @click="clickOnResult">
                         [{{ result.type }}] {{ result.title }} {{ result.date }}
                     </p>
                 </div>
@@ -136,11 +138,13 @@
                     title: null,
                     hasWord: null
                 },
+                menuHovered: false,
             },
 
             methods : {
                 menuMouseOver: function(){
-                    console.log('Mouse over menu')
+                    // console.log('Mouse over menu')
+                    this.mouseOverMenu = true
                 },
                 inputFocus: function(){
                     if (this.searchAdvance) 
@@ -163,18 +167,19 @@
                         this.reset()
                         this.searchOptions.type = entity
                         this.searchSite = true
+                        this.searchString = this.searchOptionsToString()
                         this.search()
                     }
                     else if (entity === 'page'){
                         this.reset()
                         this.searchOptions.type = entity
                         this.searchPage = true
+                        this.searchString = this.searchOptionsToString()
                         this.search()
                     }
                     else if (entity === 'advance'){
                         this.searchAdvance = true
                     }
-                    this.searchString = this.searchOptionsToString()
                 },
                 searchOptionsToString: function(){
                     let result = []
@@ -304,6 +309,13 @@
                 },
                 clickOnResult: function(){
                     this.searchSite = this.searchPage = false
+                },
+                clickOutSideMenu: function(){
+                    console.log("Click outside menu")
+                    setTimeout(()=>{
+                        if (this.menuHovered) return
+                        this.searchSite = this.searchPage = false
+                    }, 100)
                 }
             }
         })

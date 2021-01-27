@@ -24,6 +24,7 @@ router.get('/search', async(req, res)=>{
 			if (!matched) continue
 		}
 		if (conditions.owner) {
+			if (!['byMe', 'notMe', 'specificPerson'].includes(conditions.owner)) continue
 			// me, but who am I
 			if (conditions.owner === 'byMe' && doc.owner != 'me') continue
 			if (conditions.owner === 'notMe' && doc.owner == 'me') continue
@@ -34,25 +35,23 @@ router.get('/search', async(req, res)=>{
 		}
 		if (conditions.date) {
 			let dateFrom, dateTo
-			if (conditions.date === 'anytime') {
-				dateFrom = 0
-				dateTo   = new Date()
+			if (conditions.date !== 'anytime') {
+				if (conditions.date === 'yesterday') {
+					dateFrom = new Date()
+					dateFrom.setDate(dateFrom.getDate()-1)
+					dateTo   = new Date()
+				}
+				else if (conditions.date === 'last30days'){
+					dateFrom = new Date()
+					dateFrom.setDate(dateFrom.getDate()-30)
+					dateTo   = new Date()
+				}
+				else {
+					dateFrom = new Date(conditions.dateFrom)
+					dateTo 	 = new Date(conditions.dateTo)
+				}
+				if (doc.date < dateFrom || doc.date > dateTo) continue
 			}
-			else if (conditions.date === 'yesterday') {
-				dateFrom = new Date()
-				dateFrom.setDate(dateFrom.getDate()-1)
-				dateTo   = new Date()
-			}
-			else if (conditions.date === 'last30days'){
-				dateFrom = new Date()
-				dateFrom.setDate(dateFrom.getDate()-30)
-				dateTo   = new Date()
-			}
-			else {
-				dateFrom = new Date(conditions.dateFrom)
-				dateTo 	 = new Date(conditions.dateTo)
-			}
-			if (doc.date < dateFrom || doc.date > dateTo) continue
 		}
 		result.push(doc)
 	}
