@@ -1,10 +1,16 @@
 # A training project using VueJS  
 ---
+
 ## What this repo does ?
+
 This repo is only for learning VueJS, not serve any production purpose.
+
 The repo offers a search bar with variable bindings. Any changes in the search input will made changes to the Advance search box
+
 **Special notes:**
+
 *Some code may not be well-cleaned*
+
 *CSS is not that nice*
 ---
 ## Prerequisite:
