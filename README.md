@@ -12,7 +12,7 @@ The repo offers a search bar with variable bindings. Any changes in the search i
 *Some code may not be well-cleaned*
 
 *CSS is not that nice*
----
+
 ## Prerequisite:
 - Node 10 or higher
 - npm 6.14.4
@@ -43,4 +43,5 @@ http://localhost:8000/
 ---
 # FAQ
 - What if I find port 8000 already in use ?
+
 **Answer**: Simply go find a process binding port 8000 and (gracefully) kill it
