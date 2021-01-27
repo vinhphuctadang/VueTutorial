@@ -8,7 +8,11 @@
     <body>
         <div id="app">
             <div id="searchPane">
-                <input name="search" style="width:80%;" type="text" @blur="inputBlur" @focus="inputFocus" v-model="searchString">
+                <input name="search" style="width:80%;" type="text" 
+                    @blur="inputBlur" v-model="searchString"
+                    @keyup.enter="enterOnInput()"
+                    @click="inputFocus"
+                >
                 <input type="submit" value="search" v-if="!searchAdvance">
                 <div class="menu-content" v-if="searchInputFocus">
                     <p @click="selectEntity('site')">Site</p>
@@ -16,16 +20,15 @@
                     <p @click="selectEntity('advance')">Advance...</p>
                 </div>
                 <div class="menu-content" v-if="searchSite">
-                    <p>Options for search site</p>
-                    <!-- <p @click="selectEntity('site')">Site</p>
-                    <p @click="selectEntity('page')">Page</p>
-                    <p @click="selectEntity('advance')">Advance...</p> -->
+                    <p v-for="result in searchResults" @mouseover="menuMouseOver">
+                        [{{ result.type }}] {{ result.title }} {{ result.date }}
+                    </p>
+                    <p v-if="searchResults.length == 0">Not found</p>
                 </div>
-                <div class="menu-content" v-if="searchPage">
-                    <p>Options for search page</p>
-                    <!-- <p @click="selectEntity('site')">Site</p>
-                    <p @click="selectEntity('page')">Page</p>
-                    <p @click="selectEntity('advance')">Advance...</p> -->
+                <div class="menu-content" v-if="searchPage" tabindex="0">
+                    <p v-for="result in searchResults" @mouseover="menuMouseOver">
+                        [{{ result.type }}] {{ result.title }} {{ result.date }}
+                    </p>
                 </div>
                 <div class="menu-content" v-if="searchAdvance">
                     <table>
@@ -93,6 +96,7 @@
                             <td>
                                 <button @click="reset">RESET</button>
                                 <button @click="search">SEARCH</button>
+                                <button @click="cancel">CANCEL</button>
                             </td>
                         </tr>
                     </table>
@@ -102,7 +106,7 @@
                 <p v-if="searchResults.length>0">Search result:</p>
                 <ul>
                     <li v-for="result in searchResults">
-                        {{ result.id }}
+                        [{{ result.type }}] {{ result.title }} {{ result.date }}
                     </li>
                 </ul>
             </div>
@@ -114,16 +118,7 @@
             el: '#app',
             data: {
                 // message: 'Hello Vue! Following is list',
-                searchResults: [
-                    {
-                        id: '1',
-                        name: 'Cross Origin'
-                    },
-                    {
-                        id: '2',
-                        name: 'Requests'
-                    }
-                ],
+                searchResults: [],
                 searchInputFocus: false,
                 searchPage: false,
                 searchSite: false,
@@ -144,32 +139,42 @@
             },
 
             methods : {
+                menuMouseOver: function(){
+                    console.log('Mouse over menu')
+                },
                 inputFocus: function(){
-                    if (this.searchAdvance || this.searchPage || this.searchSite) 
+                    if (this.searchAdvance) 
                         return 
+                    this.searchPage = this.searchSite = false
                     this.searchInputFocus = true
                 },
                 inputBlur: function(){
                     setTimeout(()=>{
                         this.searchInputFocus = false
-                    }, 100)
+                    }, 200)
                     this.updateSearchOptions()
                 },
+                menuBlur: function(){
+                    this.searchSite = this.searchPage = false
+                },
                 selectEntity: function(entity){
-                    this.searchOptions.type = entity
+                    this.searchInputFocus = false
                     if (entity === 'site') {
-                        this.searchInputFocus = false
+                        this.reset()
+                        this.searchOptions.type = entity
                         this.searchSite = true
+                        this.search()
                     }
                     else if (entity === 'page'){
-                        this.searchInputFocus = false
+                        this.reset()
+                        this.searchOptions.type = entity
                         this.searchPage = true
+                        this.search()
                     }
                     else if (entity === 'advance'){
-                        this.searchInputFocus = false
                         this.searchAdvance = true
-                        this.searchOptions.type = null
                     }
+                    this.searchString = this.searchOptionsToString()
                 },
                 searchOptionsToString: function(){
                     let result = []
@@ -177,11 +182,24 @@
                         if (this.searchOptions[key] == null || this.searchOptions[key].length == 0) continue
                         if (Array.isArray(this.searchOptions[key])) {
                             for(let val of this.searchOptions[key]) {
-                                result.push(`"${key}:${val}"`)
+                                val = val.trim()
+                                if (val.indexOf(' ') >= 0) { 
+                                    result.push(`${key}:\`${val}\``); 
+                                }
+                                else {
+                                    result.push(`${key}:${val}`)
+                                }
                             }
                         }
                         else {
-                            result.push(`"${key}:${this.searchOptions[key]}"`)
+                            let val = this.searchOptions[key]
+                            val = val.trim()
+                            if (val.indexOf(' ') >= 0) { 
+                                result.push(`${key}:\`${val}\``); 
+                            }
+                            else {
+                                result.push(`${key}:${val}`)
+                            }
                         }
                     }
                     return result.join(' ')
@@ -211,7 +229,9 @@
                     }
                 },
                 updateSearchOptions: function(){
-                    let reg = /[^"]+(?=("\ +")|"$)/g    
+                    let reg = /\w+:("[\w\ (\\|\")]+"|\w+)/g
+
+                    // make a template
                     let tmpOptions = {}
                     for(let key in this.searchOptions) {
                         if (Array.isArray(this.searchOptions[key])) {
@@ -221,14 +241,17 @@
                         tmpOptions[key] = null
                     }
 
+                    // match the regex
                     let match = reg.exec(this.searchString)
                     while(match) {
                         let keyValue = match[0]
                         let splitIndex = keyValue.indexOf(':')
                         let key = keyValue.substr(0, splitIndex)
                         let value = keyValue.substr(splitIndex+1)
+                        // eliminate 2 quotes
+                        if (value.startsWith('"')) value = value.substring(1, value.length-1)
                         if (key in this.searchOptions) {
-                            // if key in allowed options d
+                            // key in allowed options
                             if (Array.isArray(this.searchOptions[key])) {
                                 tmpOptions[key].push(value)
                             }
@@ -239,7 +262,6 @@
                         // next match
                         match = reg.exec(this.searchString)
                     }
-
                     this.searchOptions = tmpOptions
                 },
                 reset: function(){
@@ -254,20 +276,36 @@
                         title: null,
                         hasWord: null
                     }
-                    this.updateSearchOptions()
+                    this.searchString = ''
                 },
-                search: function(){
+                search: async function(){
+                    // update search option according to the input box
+                    this.updateSearchOptions()
 
+                    let data = {}
+                    for(let attr in this.searchOptions) {
+                        if (this.searchOptions[attr]) { data[attr] = this.searchOptions[attr] }
+                    }
+                    let result = await $.ajax({
+                        url: '/search',
+                        method: 'get',
+                        data: data
+                    })
+                    this.searchResults = result
+                    this.searchAdvance = false
                 },
-                
-            },
-            watch: {
-                // whenever question changes, this function will run
-                'searchOptions.title': function (NEW, OLD) {
-                    this.updateSearchOptions()
+                enterOnInput(){
+                    console.log('Enter called')
+                    this.searchInputFocus = searchSite = this.searchPage = this.searchAdvance = false
+                    this.search()
+                },
+                cancel: function(){
+                    this.searchAdvance = false
+                },
+                clickOnResult: function(){
+                    this.searchSite = this.searchPage = false
                 }
-            },
+            }
         })
-
     </script>
 </html>
