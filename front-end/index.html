@@ -90,7 +90,7 @@
                             <td><input type="text" v-model="searchOptions.title" @change="titleChange"></td>
                         </tr>
                         <tr>
-                            <td>Has the world:</td>
+                            <td>Has the word:</td>
                             <td><input type="text" v-model="searchOptions.hasWord" @change="hasWordChange"></td>
                         </tr>
                         <tr>
@@ -185,11 +185,15 @@
                     let result = []
                     for(let key in this.searchOptions) {
                         if (this.searchOptions[key] == null || this.searchOptions[key].length == 0) continue
+                        if (key == 'hasWord') {
+                            result.push(this.searchOptions[key].trim())
+                            continue
+                        }
                         if (Array.isArray(this.searchOptions[key])) {
                             for(let val of this.searchOptions[key]) {
                                 val = val.trim()
                                 if (val.indexOf(' ') >= 0) { 
-                                    result.push(`${key}:\`${val}\``); 
+                                    result.push(`${key}:"${val}\"`); 
                                 }
                                 else {
                                     result.push(`${key}:${val}`)
@@ -234,7 +238,8 @@
                     }
                 },
                 updateSearchOptions: function(){
-                    let reg = /\w+:("[\w\ (\\|\")]+"|\w+)/g
+
+                    let reg = /\w+:*("[\w\ (\\|\")]+"|\w+)/g
 
                     // make a template
                     let tmpOptions = {}
@@ -245,18 +250,25 @@
                         }
                         tmpOptions[key] = null
                     }
-
+                    
                     // match the regex
-                    let match = reg.exec(this.searchString)
-                    while(match) {
-                        let keyValue = match[0]
+                    let match = this.searchString.match(reg)
+                    if (match == null) match = []
+                    for(let keyValue of match){ 
                         let splitIndex = keyValue.indexOf(':')
+                        if (splitIndex < 0) {
+                            // this is the word item should contain
+                            tmpOptions.hasWord = (!tmpOptions.hasWord ? keyValue : tmpOptions.hasWord + ' ' + keyValue)
+                        }
+                        console.log('keyvalue:', keyValue)
                         let key = keyValue.substr(0, splitIndex)
                         let value = keyValue.substr(splitIndex+1)
                         // eliminate 2 quotes
                         if (value.startsWith('"')) value = value.substring(1, value.length-1)
                         if (key in this.searchOptions) {
-                            // key in allowed options
+                            // hasWord has been processed
+                            if (key === 'hasWord') continue
+                            // ony key in search options are allowed
                             if (Array.isArray(this.searchOptions[key])) {
                                 tmpOptions[key].push(value)
                             }
@@ -264,8 +276,6 @@
                                 tmpOptions[key] = value
                             }
                         }
-                        // next match
-                        match = reg.exec(this.searchString)
                     }
                     this.searchOptions = tmpOptions
                 },
@@ -291,13 +301,16 @@
                     for(let attr in this.searchOptions) {
                         if (this.searchOptions[attr]) { data[attr] = this.searchOptions[attr] }
                     }
+                    // close the dialog first
+                    this.searchAdvance = false
+
+                    // then request for search
                     let result = await $.ajax({
                         url: '/search',
                         method: 'get',
                         data: data
                     })
                     this.searchResults = result
-                    this.searchAdvance = false
                 },
                 enterOnInput(){
                     console.log('Enter called')

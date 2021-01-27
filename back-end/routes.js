@@ -9,6 +9,11 @@ let data = [
 	{id: 5, is: ['starred'], title: 'The coffee motel',  type: 'page', owner: 'phuong', date: new Date(2021, 2, 5, 30, 0, 0)}
 ]
 
+/** 
+ * GET /search:
+ * search for items with given condition 
+ */
+
 router.get('/search', async(req, res)=>{
 	console.log('Queries:', req.query)
 	let conditions = req.query
@@ -31,7 +36,7 @@ router.get('/search', async(req, res)=>{
 			if (conditions.owner === 'specificPerson' && doc.owner != conditions.ownerSpecified) continue
 		}
 		if (conditions.hasWord) {
-			if (doc.indexOf(conditions.hasWord) < 0) continue 
+			if (doc.title.indexOf(conditions.hasWord) < 0) continue 
 		}
 		if (conditions.date) {
 			let dateFrom, dateTo
