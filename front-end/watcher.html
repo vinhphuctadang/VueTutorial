@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="js/vue.js"></script>
+        <script src="js/jquery.js"></script>
+        <link href="css/search.css" rel="stylesheet">
+    </head>
+    <body>
+        <div id="app">
+            <input type="text" v-model="fullName">
+            <p>{{ response }} </p>
+        </div>
+    </body>
+    <script>
+        let app = new Vue({
+            el: '#app',
+            data: {
+                fullName: '',
+                response: ''
+            },
+            methods: {
+                reply: function() {
+                    let vm = this
+                    let val = vm.fullName
+                    // will set to saved state
+                    setTimeout(()=> { vm.response = 'Your full name is ' + val }, 3000)
+                }
+            },
+            // use watcher to see differences between the 2 value
+            watch: {
+                fullName: function(newValue, oldValue) {
+                    this.reply()
+                },
+            },
+            // computed: 
+            // set <- called when avariable is set
+            // get <- called when dependencies is sets
+            // computed: {
+            //     fullName: {
+            //     },
+            // }
+        })
+    </script>
+</html>

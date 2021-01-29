@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="js/vue.js"></script>
+        <script src="js/jquery.js"></script>
+        <link href="css/search.css" rel="stylesheet">
+    </head>
+    <body>
+        <div id="app">
+            <input type="text" v-model="fullName">
+            <input type="text" v-model="firstName">
+            <input type="text" v-model="lastName">
+        </div>
+    </body>
+    <script>
+        let app = new Vue({
+            el: '#app',
+            data: {
+                firstName: '',
+                lastName: ''
+            },
+            // computed: 
+            // set <- called when avariable is set
+            // get <- called when dependencies is sets
+            computed: {
+                fullName: {
+                    get: function(){
+                        return [this.firstName, this.lastName].join(' ')
+                    },
+                    // setter
+                    set: function (newValue) {
+                        console.log(this)
+                        console.log(vm)
+                        var names = newValue.split(' ')
+                        if (names[0]) vm.firstName = names[0]; else vm.firstName = ''
+                        if (names[1]) vm.lastName = names[names.length - 1]; else vm.lastName = ''
+                    }
+                },
+            }
+        })
+    </script>
+</html>
