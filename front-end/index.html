@@ -37,7 +37,7 @@
                         <tr>
                             <td>Type:</td>
                             <td>
-                                <select v-model="searchOptions.type" @change="typeChange">
+                                <select v-model="searchOptions.type">
                                     <option value="page">Page</option>
                                     <option value="site">Site</option>
                                 </select>
@@ -46,14 +46,14 @@
                         <tr>
                             <td>Owner:</td>
                             <td>
-                                <select v-model="searchOptions.owner" @change="ownerChange">
+                                <select v-model="searchOptions.owner" >
                                     <option value="byMe">Me</option>
                                     <option value="notMe">Not me</option>
                                     <option value="specificPerson">Specific person</option>
                                 </select>
                                 <br>
                                 <div  v-if="searchOptions.owner=='specificPerson'">
-                                    Owner name: <input type="text" v-model="searchOptions.ownerSpecified" list="specificPersonList" @change="ownerChange">
+                                    Owner name: <input type="text" v-model="searchOptions.ownerSpecified" list="specificPersonList" >
                                     <datalist id="specificPersonList">
                                         <option value="tom">Tom</option>
                                         <option value="john">John</option>
@@ -64,14 +64,14 @@
                         <tr>
                             <td>Owner:</td>
                             <td>
-                                <input type="checkbox" value="starred" v-model="searchOptions.is" @change="propertyChange" :checked="[[ searchOptions.is.includes('starred') ]]"> is star
-                                <input type="checkbox" value="trashed" v-model="searchOptions.is" @change="propertyChange" :checked="[[ searchOptions.is.includes('trashed') ]]"> is trash
+                                <input type="checkbox" value="starred" v-model="searchOptions.is"  :checked="[[ searchOptions.is.includes('starred') ]]"> is star
+                                <input type="checkbox" value="trashed" v-model="searchOptions.is"  :checked="[[ searchOptions.is.includes('trashed') ]]"> is trash
                             </td>
                         </tr>
                         <tr>
                             <td>Date modified:</td>
                             <td>
-                                <select v-model="searchOptions.date" @change="dateChange">
+                                <select v-model="searchOptions.date" >
                                     <option value="anytime">Anytime</option>
                                     <option value="yesterday">Yesterday</option>
                                     <option value="last30days">Last 30 days</option>
@@ -79,19 +79,19 @@
                                 </select>
                                 <br>
                                 <div v-if="searchOptions.date==='range'">
-                                    From: <br><input type="datetime-local" v-model="searchOptions.dateFrom" @change="dateChange"><br>
-                                    To: <br><input type="datetime-local" v-model="searchOptions.dateTo" @change="dateChange">
+                                    From: <br><input type="datetime-local" v-model="searchOptions.dateFrom" ><br>
+                                    To: <br><input type="datetime-local" v-model="searchOptions.dateTo" >
                                 </div>
                             </td>
                             
                         </tr>
                         <tr>
                             <td>Item name/Title:</td>
-                            <td><input type="text" v-model="searchOptions.title" @change="titleChange"></td>
+                            <td><input type="text" v-model="searchOptions.title" ></td>
                         </tr>
                         <tr>
                             <td>Has the word:</td>
-                            <td><input type="text" v-model="searchOptions.hasWord" @change="hasWordChange"></td>
+                            <td><input type="text" v-model="searchOptions.hasWord" ></td>
                         </tr>
                         <tr>
                             <td></td>
@@ -126,7 +126,7 @@
                 searchSite: false,
                 searchAdvance: false,
                 // we will parse searchString into search options and back
-                searchString: '',
+                cachedSearchString: '',
                 searchOptions: {
                     type: null,
                     is: [],
@@ -156,7 +156,7 @@
                     setTimeout(()=>{
                         this.searchInputFocus = false
                     }, 200)
-                    this.updateSearchOptions()
+                    this.searchStringToOptions()
                 },
                 menuBlur: function(){
                     this.searchSite = this.searchPage = false
@@ -167,15 +167,17 @@
                         this.reset()
                         this.searchOptions.type = entity
                         this.searchSite = true
-                        this.searchString = this.searchOptionsToString()
-                        this.search()
+                        Vue.nextTick(function(){
+                            this.search()
+                        })
                     }
                     else if (entity === 'page'){
                         this.reset()
                         this.searchOptions.type = entity
                         this.searchPage = true
-                        this.searchString = this.searchOptionsToString()
-                        this.search()
+                        Vue.nextTick(function(){
+                            this.search()
+                        })
                     }
                     else if (entity === 'advance'){
                         this.searchAdvance = true
@@ -193,7 +195,7 @@
                             for(let val of this.searchOptions[key]) {
                                 val = val.trim()
                                 if (val.indexOf(' ') >= 0) { 
-                                    result.push(`${key}:"${val}\"`); 
+                                    result.push(`${key}:"${val}"`); 
                                 }
                                 else {
                                     result.push(`${key}:${val}`)
@@ -204,7 +206,7 @@
                             let val = this.searchOptions[key]
                             val = val.trim()
                             if (val.indexOf(' ') >= 0) { 
-                                result.push(`${key}:\`${val}\``); 
+                                result.push(`${key}:"${val}"`); 
                             }
                             else {
                                 result.push(`${key}:${val}`)
@@ -213,71 +215,15 @@
                     }
                     return result.join(' ')
                 },
-                titleChange: function(){
-                    this.searchString = this.searchOptionsToString()
-                },
-                hasWordChange: function(){
-                    this.searchString = this.searchOptionsToString()
-                },
-                typeChange: function(){
-                    this.searchString = this.searchOptionsToString()
-                },
-                propertyChange: function(){
-                    this.searchString = this.searchOptionsToString()
-                },
                 ownerChange: function(){
-                    this.searchString = this.searchOptionsToString()
                     if (this.searchOptions.owner == 'me' || this.searchOptions.owner == 'notMe') {
                         this.searchOptions.ownerSpecified = null
                     }
                 },
                 dateChange: function(){
-                    this.searchString = this.searchOptionsToString()
                     if (this.date != 'range') {
                         this.searchOptions.dateFrom = this.searchOptions.dateTo = null
                     }
-                },
-                updateSearchOptions: function(){
-
-                    let reg = /\w+:*("[\w\ (\\|\")]+"|\w+)/g
-
-                    // make a template
-                    let tmpOptions = {}
-                    for(let key in this.searchOptions) {
-                        if (Array.isArray(this.searchOptions[key])) {
-                            tmpOptions[key] = []
-                            continue
-                        }
-                        tmpOptions[key] = null
-                    }
-                    
-                    // match the regex
-                    let match = this.searchString.match(reg)
-                    if (match == null) match = []
-                    for(let keyValue of match){ 
-                        let splitIndex = keyValue.indexOf(':')
-                        if (splitIndex < 0) {
-                            // this is the word item should contain
-                            tmpOptions.hasWord = (!tmpOptions.hasWord ? keyValue : tmpOptions.hasWord + ' ' + keyValue)
-                        }
-                        console.log('keyvalue:', keyValue)
-                        let key = keyValue.substr(0, splitIndex)
-                        let value = keyValue.substr(splitIndex+1)
-                        // eliminate 2 quotes
-                        if (value.startsWith('"')) value = value.substring(1, value.length-1)
-                        if (key in this.searchOptions) {
-                            // hasWord has been processed
-                            if (key === 'hasWord') continue
-                            // ony key in search options are allowed
-                            if (Array.isArray(this.searchOptions[key])) {
-                                tmpOptions[key].push(value)
-                            }
-                            else {
-                                tmpOptions[key] = value
-                            }
-                        }
-                    }
-                    this.searchOptions = tmpOptions
                 },
                 reset: function(){
                     this.searchOptions =  {
@@ -291,12 +237,8 @@
                         title: null,
                         hasWord: null
                     }
-                    this.searchString = ''
                 },
                 search: async function(){
-                    // update search option according to the input box
-                    this.updateSearchOptions()
-
                     let data = {}
                     for(let attr in this.searchOptions) {
                         if (this.searchOptions[attr]) { data[attr] = this.searchOptions[attr] }
@@ -329,6 +271,61 @@
                         if (this.menuHovered) return
                         this.searchSite = this.searchPage = false
                     }, 100)
+                },
+                searchStringToOptions: function(){
+                    let reg = /\w+:*("[\w\ (\\|\")]+"|\w+)/g
+
+                    // make a template
+                    let tmpOptions = {}
+                    for(let key in this.searchOptions) {
+                        if (Array.isArray(this.searchOptions[key])) {
+                            tmpOptions[key] = []
+                            continue
+                        }
+                        tmpOptions[key] = null
+                    }
+                    
+                    // match the regex
+                    let match = this.cachedSearchString.match(reg)
+                    console.log('Matches:', match)
+                    if (match == null) match = []
+                    for(let keyValue of match){
+                        let splitIndex = keyValue.indexOf(':')
+                        if (splitIndex < 0) {
+                            // this is the word item should contain
+                            tmpOptions.hasWord = (!tmpOptions.hasWord ? keyValue : tmpOptions.hasWord + ' ' + keyValue)
+                        }
+                        let key = keyValue.substr(0, splitIndex)
+                        let value = keyValue.substr(splitIndex+1)
+                        // eliminate 2 quotes
+                        if (value.startsWith('"')) value = value.substring(1, value.length-1)
+                        if (key in this.searchOptions) {
+                            // hasWord has been processed
+                            if (key === 'hasWord') continue
+                            // ony key in search options are allowed
+                            if (Array.isArray(this.searchOptions[key])) {
+                                tmpOptions[key].push(value)
+                            }
+                            else {
+                                tmpOptions[key] = value
+                            }
+                        }
+                    }
+                    this.searchOptions = tmpOptions
+                    
+                }
+            },
+            computed: {
+                searchString: {
+                    get: function(){
+                        if (!this.proactiveSetSearchString)
+                            return this.searchOptionsToString()
+                        this.proactiveSetSearchString = false
+                        return this.cachedSearchString
+                    },
+                    set: function(newValue){
+                        this.cachedSearchString = newValue
+                    }
                 }
             }
         })
